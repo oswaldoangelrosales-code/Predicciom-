@@ -116,8 +116,8 @@ if score_probs is None:
     from scipy.stats import poisson
     import numpy as _np
 
-    lambda_h = pred.home_goal_expectation
-    lambda_a = pred.away_goal_expectation
+    lambda_h = pred["exp_goals_home"]
+    lambda_a = pred["exp_goals_away"]
     if lambda_h is None or lambda_a is None:
         raise ValueError("No expected goals available to compute score probabilities")
 
