@@ -3,7 +3,8 @@ from penaltyblog.models import DixonColesGoalModel
 
 url = "https://raw.githubusercontent.com/martj42/international_results/master/results.csv"
 df = pd.read_csv(url)
-
+df["date"] = pd.to_datetime(df["date"])
+df = df[df["date"] >= "2022-01-01"]
 
 # select and rename columns
 data = df[["home_team", "away_team", "home_score", "away_score"]].copy()
