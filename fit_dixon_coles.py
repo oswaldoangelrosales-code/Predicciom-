@@ -1,3 +1,4 @@
+import sys
 import pandas as pd
 from penaltyblog.models import DixonColesGoalModel
 
@@ -67,8 +68,8 @@ print("home_advantage (model._params):", model._params.get("home_advantage") if 
 print("model.__dict__ keys:", sorted(k for k in model.__dict__.keys()))
 
 # Try using the model's predict method for a sample match; fallback if teams missing
-home = "Netherlands"
-away = "Sweden"
+home = sys.argv[1]
+away = sys.argv[2]
 print(f"\nPredicting match: {home} vs {away}")
 pred = None
 try:
