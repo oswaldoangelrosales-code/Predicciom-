@@ -5,10 +5,25 @@ from penaltyblog.models import DixonColesGoalModel
 url = "https://raw.githubusercontent.com/martj42/international_results/master/results.csv"
 df = pd.read_csv(url)
 df["date"] = pd.to_datetime(df["date"])
-df = df[df["date"] >= "2022-01-01"]
 
-# Excluir amistosos
-df = df[df["tournament"] != "Friendly"]
+official_tournaments = [
+    "FIFA World Cup",
+    "FIFA World Cup qualification",
+    "UEFA Euro",
+    "UEFA Euro qualification",
+    "UEFA Nations League",
+    "Copa América",
+    "Gold Cup",
+    "African Cup of Nations",
+    "African Cup of Nations qualification",
+    "AFC Asian Cup",
+    "AFC Asian Cup qualification",
+    "CONCACAF Nations League",
+    "CONMEBOL–UEFA Cup of Champions"
+]
+
+df = df[df["date"] >= "2024-01-01"]
+df = df[df["tournament"].isin(official_tournaments)]
 
 # select and rename columns
 data = df[["home_team", "away_team", "home_score", "away_score"]].copy()
@@ -105,29 +120,23 @@ except Exception as e:
     print("Fallback predicted expected goals:", pred)
 
 # Compute score probability grid (use model's method if available, otherwise Poisson product)
-score_probs = None
-if hasattr(pred, "correct_score_grid"):
-    try:
-        score_probs = pred.correct_score_grid()
-    except Exception as _e:
-        score_probs = None
+from scipy.stats import poisson
+import numpy as np
 
-if score_probs is None:
-    from scipy.stats import poisson
-    import numpy as _np
-
+if hasattr(pred, "home_goal_expectation"):
+    lambda_h = pred.home_goal_expectation
+    lambda_a = pred.away_goal_expectation
+else:
     lambda_h = pred["exp_goals_home"]
     lambda_a = pred["exp_goals_away"]
-    if lambda_h is None or lambda_a is None:
-        raise ValueError("No expected goals available to compute score probabilities")
 
-    max_goals = 6
-    grid = _np.zeros((max_goals + 1, max_goals + 1))
-    for i in range(max_goals + 1):
-        for j in range(max_goals + 1):
-            grid[i, j] = poisson.pmf(i, lambda_h) * poisson.pmf(j, lambda_a)
+max_goals = 6
+score_probs = np.zeros((max_goals + 1, max_goals + 1))
 
-    score_probs = grid
+for i in range(max_goals + 1):
+    for j in range(max_goals + 1):
+        score_probs[i, j] = poisson.pmf(i, lambda_h) * poisson.pmf(j, lambda_a)
+
 home_win = score_probs[np.tril_indices(score_probs.shape[0], -1)].sum()
 draw = np.trace(score_probs)
 away_win = score_probs[np.triu_indices(score_probs.shape[0], 1)].sum()
@@ -136,6 +145,59 @@ print("\nProbabilidades:")
 print(f"{home} gana: {home_win:.1%}")
 print(f"Empate: {draw:.1%}")
 print(f"{away} gana: {away_win:.1%}")
+# Ambos anotan (BTTS)
+btts_yes = score_probs[1:, 1:].sum()
+btts_no = 1 - btts_yes
+
+print("\nAmbos anotan:")
+print(f"Sí: {btts_yes*100:.1f}%")
+print(f"No: {btts_no*100:.1f}%")
+
+# Over / Under 2.5 goles
+over25 = 0
+for i in range(score_probs.shape[0]):
+    for j in range(score_probs.shape[1]):
+        if i + j >= 3:
+            over25 += score_probs[i, j]
+
+under25 = 1 - over25
+
+print("\nMás/Menos 2.5 goles:")
+print(f"Over 2.5: {over25*100:.1f}%")
+print(f"Under 2.5: {under25*100:.1f}%")
+# Doble oportunidad
+one_x = home_win + draw
+x_two = draw + away_win
+one_two = home_win + away_win
+
+print("\nDoble oportunidad:")
+print(f"1X ({home} o Empate): {one_x*100:.1f}%")
+print(f"X2 (Empate o {away}): {x_two*100:.1f}%")
+print(f"12 ({home} o {away}): {one_two*100:.1f}%")
+# Over / Under 1.5 y 3.5 goles
+over15 = 0
+over35 = 0
+
+for i in range(score_probs.shape[0]):
+    for j in range(score_probs.shape[1]):
+        total_goals = i + j
+
+        if total_goals >= 2:
+            over15 += score_probs[i, j]
+
+        if total_goals >= 4:
+            over35 += score_probs[i, j]
+
+under15 = 1 - over15
+under35 = 1 - over35
+
+print("\nMás/Menos 1.5 goles:")
+print(f"Over 1.5: {over15*100:.1f}%")
+print(f"Under 1.5: {under15*100:.1f}%")
+
+print("\nMás/Menos 3.5 goles:")
+print(f"Over 3.5: {over35*100:.1f}%")
+print(f"Under 3.5: {under35*100:.1f}%")
 flat = []
 for i in range(score_probs.shape[0]):
     for j in range(score_probs.shape[1]):
@@ -170,4 +232,4 @@ for i in range(score_probs.shape[0]):
 
 plt.savefig("heatmap_marcadores.png", bbox_inches="tight")
 print("Heatmap guardado en heatmap_marcadores.png")
-print("\nScore probability grid (rows=home goals, cols=away goals):\n", score_probs)
+# print("\nScore probability grid (rows=home goals, cols=away goals):\n", score_probs)
