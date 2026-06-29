@@ -66,7 +66,8 @@ print("Fit completed.")
 # Print useful attributes if available
 for attr in ("params", "theta", "attack", "defence", "home_adv", "rho"):
     if hasattr(model, attr):
-        print(f"{attr}:", getattr(model, attr))
+        #print(f"{attr}:", getattr(model, attr))
+        pass
 
 # set home advantage to 0 explicitly
 # Try setting in both public and internal storage (depending on implementation)
@@ -81,11 +82,11 @@ try:
 except Exception:
     pass
 
-print("home_advantage (model.params):", model.params.get("home_advantage") if hasattr(model, "params") and isinstance(model.params, dict) else None)
-print("home_advantage (model._params):", model._params.get("home_advantage") if hasattr(model, "_params") and isinstance(model._params, dict) else None)
+#print("home_advantage (model.params):", model.params.get("home_advantage") if hasattr(model, "params") and isinstance(model.params, dict) else None)
+#print("home_advantage (model._params):", model._params.get("home_advantage") if hasattr(model, "_params") and isinstance(model._params, dict) else None)
 
 # fallback: show keys in model's __dict__
-print("model.__dict__ keys:", sorted(k for k in model.__dict__.keys()))
+#print("model.__dict__ keys:", sorted(k for k in model.__dict__.keys()))
 
 # Try using the model's predict method for a sample match; fallback if teams missing
 home = sys.argv[1]
@@ -95,15 +96,15 @@ away_elo = elo.get(away, 1650)
 
 elo_diff = home_elo - away_elo
 
-print(f"Elo {home}: {home_elo}")
-print(f"Elo {away}: {away_elo}")
-print(f"Diferencia Elo: {elo_diff}")
-print(f"\nPredicting match: {home} vs {away}")
+#print(f"Elo {home}: {home_elo}")
+#print(f"Elo {away}: {away_elo}")
+#print(f"Diferencia Elo: {elo_diff}")
+#print(f"\nPredicting match: {home} vs {away}")
 pred = None
 try:
     # Some implementations expect team names present in the fitted teams
     pred = model.predict(home_team=home, away_team=away)
-    print("model.predict output:", pred)
+    #print("model.predict output:", pred)
 except Exception as e:
     print("model.predict failed:", repr(e))
     # Fallback: compute expected goals using mean attack/defence when teams are unknown
