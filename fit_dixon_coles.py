@@ -24,6 +24,8 @@ official_tournaments = [
 
 df = df[df["date"] >= "2024-01-01"]
 df = df[df["tournament"].isin(official_tournaments)]
+print("Partidos usados:", len(df))
+print(df["tournament"].value_counts())
 
 # select and rename columns
 data = df[["home_team", "away_team", "home_score", "away_score"]].copy()
@@ -129,8 +131,31 @@ if hasattr(pred, "home_goal_expectation"):
 else:
     lambda_h = pred["exp_goals_home"]
     lambda_a = pred["exp_goals_away"]
+# Ajuste manual de fuerza por selección
+team_strength = {
+    "Japan": 1.25,
+    "Tunisia": 0.90,
+    "Netherlands": 1.20,
+    "Sweden": 1.05,
+    "Ecuador": 1.05,
+    "Curacao": 0.75,
+    "Mexico": 1.10,
+    "United States": 1.15,
+    "Argentina": 1.30,
+    "Brazil": 1.30,
+    "France": 1.30,
+    "Spain": 1.25,
+    "England": 1.25,
+    "Portugal": 1.25,
+    "Germany": 1.20,
+}
 
-max_goals = 6
+home_strength = team_strength.get(home, 1.0)
+away_strength = team_strength.get(away, 1.0)
+
+lambda_h = lambda_h * home_strength
+lambda_a = lambda_a * away_strength
+max_goals = 8
 score_probs = np.zeros((max_goals + 1, max_goals + 1))
 
 for i in range(max_goals + 1):
