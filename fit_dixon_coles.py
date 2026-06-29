@@ -1,6 +1,9 @@
 import sys
 import pandas as pd
 from penaltyblog.models import DixonColesGoalModel
+elo_df = pd.read_csv("elo.csv")
+elo_df["elo"] = elo_df["elo"].astype(int)
+elo = dict(zip(elo_df["team"], elo_df["elo"]))
 
 url = "https://raw.githubusercontent.com/martj42/international_results/master/results.csv"
 df = pd.read_csv(url)
@@ -87,6 +90,14 @@ print("model.__dict__ keys:", sorted(k for k in model.__dict__.keys()))
 # Try using the model's predict method for a sample match; fallback if teams missing
 home = sys.argv[1]
 away = sys.argv[2]
+home_elo = elo.get(home, 1650)
+away_elo = elo.get(away, 1650)
+
+elo_diff = home_elo - away_elo
+
+print(f"Elo {home}: {home_elo}")
+print(f"Elo {away}: {away_elo}")
+print(f"Diferencia Elo: {elo_diff}")
 print(f"\nPredicting match: {home} vs {away}")
 pred = None
 try:
